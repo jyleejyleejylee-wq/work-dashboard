@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업무 통합 관리 웹 대시보드</title>
+  <style>
+    :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --card-bg: #ffffff; --text: #1e293b; --text-muted: #64748b; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); line-height: 1.5; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+    header p { font-size: 14px; opacity: 0.9; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .kpi-title { font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+    .kpi-value { font-size: 20px; font-weight: 700; color: var(--primary); }
+    .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
+    .controls { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--card-bg); padding: 16px; border-radius: 10px; border: 1px solid var(--border); }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab-btn { padding: 8px 16px; border: 1px solid var(--border); background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .search-input { padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; width: 280px; }
+    .section { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+    .task-list { list-style: none; }
+    .task-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border); }
+    .task-item:last-child { border-bottom: none; }
+    .task-item input[type="checkbox"] { width: 18px; height: 18px; margin-top: 3px; cursor: pointer; }
+    .task-content { flex: 1; }
+    .task-time { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .task-text { font-size: 15px; margin-top: 2px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-left: 8px; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-ongoing { background: #dbeafe; color: #1e40af; }
+    .badge-postponed { background: #fee2e2; color: #991b1b; }
+    .badge-planned { background: #fef3c7; color: #92400e; }
+    .call-item { padding: 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; background: #fafafa; }
+    .call-header { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 6px; font-size: 15px; }
+    .call-body { font-size: 14px; color: #334155; line-height: 1.6; }
+    .keep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .keep-card { background: #fffde7; border: 1px solid #fef08a; padding: 16px; border-radius: 8px; font-size: 14px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+    .cal-card { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: 8px; font-size: 14px; }
+    .add-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    .add-form input, .add-form select, .add-form textarea { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    .add-form textarea { grid-column: 1 / -1; height: 60px; }
+    .add-form button { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; grid-column: 1 / -1; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <header>
+              <h1>업무 통합 관리 웹 대시보드</h1>
+            <p>기준일: 2026-10-14 | (주)우성 CA사본부 제품전략팀 / 상지역담당 이재윤</p>
+        </header>
+      <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-title">오늘 & 긴급 실행 진행률</div>div><div class="kpi-value" id="kpi-progress-text">0%</div>div><div class="progress-bar"><div class="progress-fill" id="kpi-progress-bar"></div>div></div>div></div>div>
+          <div class="kpi-card"><div class="kpi-title">통화녹음·유선협의</div>div><div class="kpi-value" id="kpi-call-count">8건</div>div></div>div>
+          <div class="kpi-card"><div class="kpi-title">미완료 테스크</div>div><div class="kpi-value">11건 <span style="font-size:12px; color:var(--text-muted);">(이월 5건 포함 | 누적 완료 66건)</span>span></div>div></div>div>
+          <div class="kpi-card"><div class="kpi-title">구글 킵 업무 메모</div>div><div class="kpi-value">9건 <span style="font-size:12px; color:var(--text-muted);">(고정 7건)</span>span></div>div></div>div>
+          <div class="kpi-card"><div class="kpi-title">10~11월 캘린더 일정</div>div><div class="kpi-value">28건 <span style="font-size:12px; color:var(--text-muted);">(기본 21건 + Flow 7건)</span>span></div>div></div>div>
+      </div>div>
+      <div class="controls">
+          <div class="tabs">
+                <button class="tab-btn active" onclick="filterTab('all', event)">전체보기</button>button>
+                <button class="tab-btn" onclick="filterTab('sec1', event)">오늘/이월/예정 과제</button>button>
+                <button class="tab-btn" onclick="filterTab('sec2', event)">통화녹음/유선협의</button>button>
+                <button class="tab-btn" onclick="filterTab('sec3', event)">구글 킵 메모</button>button>
+                <button class="tab-btn" onclick="filterTab('sec4', event)">캘린더 일정</button>button>
+          </div>div>
+          <input type="text" id="search-bar" class="search-input" placeholder="통합 검색..." oninput="handleSearch()">
+      </div>div>
+      <div class="section" id="sec1">
+          <div class="section-title">섹션 1: 오늘(10/14) 핵심 업무 및 이월/예정 과제 (14건)</div>div>
+          <ul class="task-list" id="task-container"></ul>ul>
+      </div>div>
+      <div class="section" id="sec2">
+          <div class="section-title">섹션 2: Z Fold8 Ultra 통화녹음 요 및 유선협의 대장</div>div>
+          <div style="margin-bottom:16px;">
+                <h4 style="font-size:14px; margin-bottom:8px; color:var(--primary);">📱 Z Fold8 Ultra 통화기록 빠른 추가</h4>
+                <div class="add-form">
+                        <input type="text" id="call-date" placeholder="날짜 (예: 2026-10-14)" value="2026-10-14">
+                        <input type="text" id="call-target" placeholder="상대방 / 업체명">
+                        <select id="call-status">
+                                  <option value="신규">신규</option>option>
+                                  <option value="진행중">진행중</option>option>
+                                  <option value="협의중">협의중</option>option>
+                                  <option value="합의완료">합의완료</option>option>
+                                  <option value="완료">완료</option>option>
+                                  <option value="미팅확정">미팅확정</option>option>
+                        </select>select>
+                        <textarea id="call-detail" placeholder="통화 요약 내용 및 협의 사항 입력..."></textarea>
+                        <button onclick="addCallLog()">빠른 추가 및 저장</button>button>
+                </div>div>
+          </div>div>
+          <div id="call-container"></div>div>
+      </div>div>
+      <div class="section" id="sec3">
+          <div class="section-title">섹션 3: 구글 킵(Keep) 업무 메모 (9건)</div>div>
+          <div class="keep-grid" id="keep-container"></div>div>
+      </div>div>
+      <div class="section" id="sec4">
+          <div class="section-title">섹션 4: 구글 캘린더 주요 일정 (기본 + Flow 캘린더)</div>div>
+          <div class="cal-grid" id="cal-container"></div>div>
+      </div>div>
+    </div>div>
+  <script>
+    const defaultTasks = [
+      { id: 't1', date: '2026-10-14', time: '08:30~09:30', text: '동명사료 미팅 9시 (가격표&계약서 준비)', status: '완료', badgeClass: 'badge-done', checked: true },
+      { id: 't2', date: '2026-10-14', time: '11:00~12:00', text: '디앤씨(DNC) 칼선 찾기 (OEM/ODM 패키지 칼선 파일 확인 및 전달)', status: '진행중', badgeClass: 'badge-ongoing', checked: false },
+      { id: 't3', date: '2026-10-14', time: '14:00~15:00', text: '예지 전달(넾다,올인원)', status: '완료', badgeClass: 'badge-done', checked: true },
+      { id: 't4', date: '2026-10-14', time: '15:44', text: '(주)대원동물 김준수 대표 닭사료 단가·조건 및 장려금 확인', status: '완료', badgeClass: 'badge-done', checked: true },
+      { id: 't5', date: '2026-10-14', time: '17:30~18:30', text: '스마트스토어 공지 상세에서 메이드인코리아 빼기 (10/12 이월 건 통합)', status: '진행중', badgeClass: 'badge-ongoing', checked: false },
+      { id: 't6', date: '2026-10-14', time: '당일', text: '경산사료 파워캐츠 로미오20KG 포장일 확인', status: '진행중', badgeClass: 'badge-ongoing', checked: false },
+      { id: 't7', date: '2026-10-13', time: '(이월)', text: '펫바자 부진임박재고(야미덴탈잼 1,250개 개당 500원) 처리방안 확인', status: '이월', badgeClass: 'badge-postponed', checked: false },
+      { id: 't8', date: '2026-10-12', time: '(이월)', text: '차량 운행 일지 작성(8월,9월)', status: '이월', badgeClass: 'badge-postponed', checked: false },
+      { id: 't9', date: '2026-10-11', time: '(이월)', text: '반품처리 5곳', status: '이월', badgeClass: 'badge-postponed', checked: false },
+      { id: 't10', date: '2026-10-11', time: '(이월)', text: '운동화 포토리뷰', status: '이월', badgeClass: 'badge-postponed', checked: false },
+      { id: 't11', date: '2026-10-16', time: '예정', text: '파워캐츠 로미오 발주넣기 20파렛/10파렛', status: '예정', badgeClass: 'badge-planned', checked: false },
+      { id: 't12', date: '2026-10-19', time: '예정', text: '스마트스토어 자체기획전세팅', status: '예정', badgeClass: 'badge-planned', checked: false },
+      { id: 't13', date: '2026-11-06', time: '예정', text: '키츠 신상 상품등록', status: '예정', badgeClass: 'badge-planned', checked: false },
+      { id: 't14', date: '2026-11-16', time: '예정', text: '남양펫푸드 프로모션 연장(10%) +3개월', status: '예정', badgeClass: 'badge-planned', checked: false }
+      ];
+    const defaultCalls = [
+      { date: '2026-10-14 (신규)', target: '(주)대원동물 김준수 대표(010-4757-1188, 충북 청주시 서원구 남이면 청남로 992, 월 산란+육계 10톤·양견 7톤, 현 나농사료)', status: '합의완료', detail: '산란마당M(가루) 20KG 11,800원(590원/kg), 달구마당P(펠렛) 20KG 12,000원(600원/kg, VAT별도), 논산공장 상차도, 출고 전 입금(선입금), 장려금 없음 확정, 파레트 회수 AJ렌탈(아주파레트)' },
+      { date: '2026-10-14', target: '남양펫푸드', status: '진행중', detail: '넥스탑 패밀리캣 20KG 40포→32포(11A: 4방×10단) 변경 가능 여부 및 고양이 신제품 15B(5방×10단=50개) 적재 점검' },
+      { date: '2026-10-14', target: '경산사료', status: '진행중', detail: '파워캐츠 로미오 20KG 생산·포장 완료 상태 유선 최종 확인 (10/16 20파렛/10파렛 발주 연계)' },
+      { date: '2026-10-13', target: '진도식품/진도펫', status: '합의완료', detail: '토이연어 물량 변동 유선 안내 및 발주 수량 조율 완료' },
+      { date: '2026-10-13', target: '펫바자', status: '협의중', detail: '야미덴탈잼 1,250개 개당 500원 공급 조건 추가 매입 타진 및 미진행 시 자체 소진' },
+      { date: '2026-10-12', target: '디앤씨(DNC)', status: '진행중', detail: 'OEM/ODM 견적서 전달(10/12) 및 거래명세표(10/13) 완료, 10/14 칼선 전달' },
+      { date: '2026-10-12', target: '동명사료', status: '완료', detail: '10/14 오전 9시 대면 미팅 확정 및 가격표·계약서 지참' },
+      { date: '2026-10-10', target: '피플(우주인) 안석진 사장님', status: '확정', detail: '산 키츠 온/오프라인 대리점 협의 및 10/21 17:00 식사 미팅 확정' }
+      ];
+    const keeps = [
+        '청주 김준수 닭사료', '남양펫푸드 적재수량 변경협의', '남양펫푸드 OEMODM(26년 9월 15일 가격확정 첨부)',
+        '온라인 판매 9종(스마트스토어 배너·팝업 및 소포장 활성화, 패리캣 2종은 승인 대리점만 가능)',
+        '스마트스토어 운영관련(올인원 하네스 패딩 인스타 컨텐츠 업로드 시 판량 가 예상)',
+        '키츠 판매 활성화(부산 피플 우주인)', '부진임박 재고(야미덴탈잼 1,250개 개당 500원)',
+        '10월 온라인 행사계획(11/9부터 스마트스토어 세트 위주·팡 단품 위주)', '디앤씨 OEM/ODM'
+      ];
+    const calendars = [
+      { period: '10/7~10/21', title: '올인원 패딩 자체기획전' },
+      { period: '10/12~10/18', title: '라이프위크' },
+      { period: '10/14', title: '동명사료 팅·디앤씨 칼선 찾기·예지 전달·메이드인코리아 빼기' },
+      { period: '10/15~16 & 10/19', title: '인수인계(전라) 1차(10/15~16) 및 2차(10/19)' },
+      { period: '10/20', title: '인수인계 마무리(09:00) 및 별회(18:30)' },
+      { period: '10/21 17:00', title: '피플 안석진 사장님 심' },
+      { period: '10/26', title: '사업본부 회식' },
+      { period: '10/29~11/11', title: '스마트스토어 넾다일' },
+      { period: '10/31 10:00', title: '안재현 사장님 아들 결혼식' },
+      { period: '11/7~11/8', title: '영일영일 모임 (계림스테이)' },
+      { period: '11/20~11/22', title: '메가주2026 (킨텍스)' }
+      ];
+    let tasks = JSON.parse(localStorage.getItem('work_dashboard_tasks')) || defaultTasks;
+    let calls = JSON.parse(localStorage.getItem('work_dashboard_calls')) || defaultCalls;
+    function saveTasks() { localStorage.setItem('work_dashboard_tasks', JSON.stringify(tasks)); renderTasks(); updateKPI(); }
+    function saveCalls() { localStorage.setItem('work_dashboard_calls', JSON.stringify(calls)); renderCalls(); updateKPI(); }
+    function updateKPI() {
+        const totalUrgent = 6;
+        const completedUrgent = tasks.slice(0, 6).filter(t => t.checked).length;
+        const pct = Math.round((completedUrgent / totalUrgent) * 100);
+        document.getElementById('kpi-progress-text').innerText = pct + '%';
+        document.getElementById('kpi-progress-bar').style.width = pct + '%';
+        document.getElementById('kpi-call-count').innerText = calls.length + '건';
+    }
+    function renderTasks() {
+        const container = document.getElementById('task-container');
+        container.innerHTML = '';
+        tasks.forEach((t, idx) => {
+              const li = document.createElement('li');
+              li.className = 'task-item';
+              li.dataset.text = (t.date + ' ' + t.time + ' ' + t.text + ' ' + t.status).toLowerCase();
+              li.innerHTML = `<input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask(${idx})"><div class="task-content"><span class="task-time">${t.date} ${t.time}</span><span class="badge ${t.badgeClass}">${t.status}</span><div class="task-text" style="${t.checked ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${t.text}</div></div>`;
+              container.appendChild(li);
+        });
+    }
+    function toggleTask(idx) {
+        tasks[idx].checked = !tasks[idx].checked;
+        tasks[idx].status = tasks[idx].checked ? '완료' : (idx < 6 ? '진행중' : tasks[idx].status);
+        tasks[idx].badgeClass = tasks[idx].checked ? 'badge-done' : (idx < 6 ? 'badge-ongoing' : tasks[idx].badgeClass);
+        saveTasks();
+    }
+    function renderCalls() {
+        const container = document.getElementById('call-container');
+        container.innerHTML = '';
+        calls.forEach(c => {
+              const div = document.createElement('div');
+              div.className = 'call-item';
+              div.dataset.text = (c.date + ' ' + c.target + ' ' + c.status + ' ' + c.detail).toLowerCase();
+              div.innerHTML = `<div class="call-header"><span>${c.date} | ${c.target}</span><span class="badge badge-ongoing">${c.status}</span></div><div class="call-body">${c.detail}</div>`;
+              container.appendChild(div);
+        });
+    }
+    function addCallLog() {
+        const date = document.getElementById('call-date').value.trim();
+        const target = document.getElementById('call-target').value.trim();
+        const status = document.getElementById('call-status').value;
+        const detail = document.getElementById('call-detail').value.trim();
+        if(!target || !detail) { alert('상대방/업체명과 상세 내용을 입력해 주세요.'); return; }
+        calls.unshift({ date: date || '2026-10-14', target, status, detail });
+        document.getElementById('call-target').value = '';
+        document.getElementById('call-detail').value = '';
+        saveCalls();
+    }
+    function renderKeeps() {
+        const container = document.getElementById('keep-container');
+        container.innerHTML = '';
+        keeps.forEach(k => {
+              const div = document.createElement('div');
+              div.className = 'keep-card';
+              div.dataset.text = k.toLowerCase();
+              div.innerHTML = `📌 <strong>${k}</strong>`;
+              container.appendChild(div);
+        });
+    }
+    function renderCalendars() {
+        const container = document.getElementById('cal-container');
+        container.innerHTML = '';
+        calendars.forEach(c => {
+              const div = document.createElement('div');
+              div.className = 'cal-card';
+              div.dataset.text = (c.period + ' ' + c.title).toLowerCase();
+              div.innerHTML = `📅 <strong>${c.period}</strong><br>${c.title}`;
+              container.appendChild(div);
+        });
+    }
+    function filterTab(tabId, evt) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        if(evt && evt.target) evt.target.classList.add('active');
+        const sections = ['sec1', 'sec2', 'sec3', 'sec4'];
+        sections.forEach(s => {
+              const el = document.getElementById(s);
+              if(tabId === 'all' || tabId === s) { el.style.display = 'block'; } else { el.style.display = 'none'; }
+        });
+    }
+    function handleSearch() {
+        const query = document.getElementById('search-bar').value.toLowerCase().trim();
+        document.querySelectorAll('.task-item').forEach(el => { el.style.display = el.dataset.text.includes(query) ? 'flex' : 'none'; });
+        document.querySelectorAll('.call-item').forEach(el => { el.style.display = el.dataset.text.includes(query) ? 'block' : 'none'; });
+        document.querySelectorAll('.keep-card').forEach(el => { el.style.display = el.dataset.text.includes(query) ? 'block' : 'none'; });
+        document.querySelectorAll('.cal-card').forEach(el => { el.style.display = el.dataset.text.includes(query) ? 'block' : 'none'; });
+    }
+    renderTasks(); renderCalls(); renderKeeps(); renderCalendars(); updateKPI();
+  </script>
+  </body>
+</html>html>
+  </script></p></h1>
+        </header>
+  </body>
+  </style></title>
+  </head>
